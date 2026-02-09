@@ -128,6 +128,8 @@ let arm_adv_simd_expand_imm = new_definition
        SOME(word_duplicate (word_join abcdefgh (word 0:byte):int16))
     else if cmode = word 0b0100 then
       SOME(word_duplicate (word_join (word_zx abcdefgh:int16) (word 0:int16):int32))
+    else if cmode = word 0b1101 then
+      SOME(word_duplicate (word_join (word_zx abcdefgh:int16) (word 65535:int16):int32))
     else // Other cases are uncovered.
       NONE`;;
 
@@ -588,8 +590,8 @@ let decode = new_definition `!w:int32. decode w =
     else NONE
 
   | [0:1; q; 0:1; 0b011110:6; 0b0000:4; abc:3; cmode:4; 0b01:2; defgh:5; Rd:5] ->
-    // MOVI (op=0, 32-bit element with shift)
-    if cmode = word 0b0100 /\ q then
+    // MOVI (op=0, 32-bit element with shift or MSL)
+    if (cmode = word 0b0100 \/ cmode = word 0b1101) /\ q then
       let abcdefgh:(8)word = word_join abc defgh in
       match arm_adv_simd_expand_imm abcdefgh (word 0:(1)word) cmode with
         SOME imm -> SOME (arm_MOVI (QREG' Rd) imm)
